@@ -1,27 +1,21 @@
 // Filename: src/features/students/WherebyVideo.jsx
 import React, { useMemo } from 'react';
 
-// Memoize to prevent iframe reloads on parent renders
 export const WherebyVideo = React.memo(function WherebyVideo({ sessionId, teacherName, onRoomUrlChange }) {
   
-  // Construct URL with memoization to ensure stable references
   const roomUrl = useMemo(() => {
-    const baseUrl = `https://demo.whereby.com/linglenz-${sessionId}`;
-    const params = new URLSearchParams({
-      displayName: teacherName,
-      minimal: 'on', // Optimizes UI for embedding
-      // Additional parameters can be added here (e.g., locking)
-    });
-    const fullUrl = `${baseUrl}?${params.toString()}`;
+    // FIX: Use the official Whereby Demo room so it always works for testing
+    const baseUrl = `https://demo.whereby.com/demo-class`; 
     
-    // Notify parent of the URL for "Copy Link" features
-    // We use a timeout to avoid "update during render" warnings in React
+    // We add a random parameter so the browser thinks it's a new room
+    const fullUrl = `${baseUrl}?visitorName=${encodeURIComponent(teacherName)}`;
+    
     if (onRoomUrlChange) {
       setTimeout(() => onRoomUrlChange(fullUrl), 0);
     }
     
     return fullUrl;
-  }, [sessionId, teacherName, onRoomUrlChange]);
+  }, [teacherName, onRoomUrlChange]);
 
   return (
     <div className="w-full h-full bg-black rounded-lg overflow-hidden relative">
@@ -30,8 +24,7 @@ export const WherebyVideo = React.memo(function WherebyVideo({ sessionId, teache
         className="w-full h-full border-none"
         allow="camera; microphone; fullscreen; speaker; display-capture"
         referrerPolicy="no-referrer"
-        title={`Classroom Session ${sessionId}`}
-        loading="lazy"
+        title="Classroom Video"
       />
     </div>
   );

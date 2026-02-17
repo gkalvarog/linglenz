@@ -1,37 +1,33 @@
 // Filename: src/features/students/AddStudentModal.jsx
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../api/supabaseClient';
-import { X, Loader2, UserPlus } from 'lucide-react';
+import { X, Loader2, UserPlus, Globe } from 'lucide-react';
+// NEW: Import the flags file
+import { flags } from '../../utils/flags';
 
 /**
  * Modal dialog for creating new student entities.
- * Handles focus trapping and body scroll locking for UX.
+ * Handles focus trapping, body scroll locking, and dynamic language flags.
  */
 export function AddStudentModal({ isOpen, onClose, session, onStudentAdded }) {
   // --- State ---
   const [name, setName] = useState('');
-  const [language, setLanguage] = useState('Spanish');
+  const [language, setLanguage] = useState('english'); // Default to lowercase key matching flags.js
   const [loading, setLoading] = useState(false);
   
-  // --- Refs ---
+  // --- Refs (Restored) ---
   const nameInputRef = useRef(null);
 
-  // --- Side Effects ---
-  // 1. Focus Management & Scroll Locking
+  // --- Side Effects (Restored) ---
   useEffect(() => {
     if (isOpen) {
-      // Lock body scroll
-      document.body.style.overflow = 'hidden';
-      // Focus input after animation frame
+      document.body.style.overflow = 'hidden'; // Lock scroll
       setTimeout(() => {
-        nameInputRef.current?.focus();
+        nameInputRef.current?.focus(); // Auto-focus input
       }, 50);
     } else {
-      // Restore body scroll
       document.body.style.overflow = 'unset';
     }
-    
-    // Cleanup on unmount
     return () => { document.body.style.overflow = 'unset'; };
   }, [isOpen]);
 
@@ -49,15 +45,17 @@ export function AddStudentModal({ isOpen, onClose, session, onStudentAdded }) {
         .from('students')
         .insert({
           name: name.trim(),
-          language,
-          user_id: session.user.id
+          language: language, // Saves 'french', 'spanish', etc.
+          user_id: session.user.id,
+          language_level: 'Beginner'
         });
 
       if (error) throw error;
 
       // Success Path
       setName('');
-      onStudentAdded(); // Notify parent to refresh list
+      setLanguage('english');
+      onStudentAdded(); 
       onClose();
       
     } catch (err) {
@@ -68,8 +66,11 @@ export function AddStudentModal({ isOpen, onClose, session, onStudentAdded }) {
     }
   };
 
-  // --- Constants ---
-  const LANGUAGES = ['Spanish', 'Portuguese', 'French', 'German', 'Italian', 'Japanese', 'Chinese', 'Russian', 'Arabic'];
+  // --- Dynamic Languages (The Only Major Change) ---
+  const languageOptions = Object.keys(flags).map(key => ({
+    value: key,
+    label: key.charAt(0).toUpperCase() + key.slice(1), 
+  })).sort((a, b) => a.label.localeCompare(b.label));
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
@@ -81,7 +82,7 @@ export function AddStudentModal({ isOpen, onClose, session, onStudentAdded }) {
       />
 
       {/* Modal Panel */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100 animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-gray-50">
           <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
@@ -116,14 +117,15 @@ export function AddStudentModal({ isOpen, onClose, session, onStudentAdded }) {
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Target Language</label>
             <div className="relative">
+              <Globe className="absolute left-3 top-3.5 w-5 h-5 text-gray-400 pointer-events-none" />
               <select 
-                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none appearance-none bg-white transition-all"
+                className="w-full pl-10 p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none appearance-none bg-white transition-all cursor-pointer capitalize"
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
                 disabled={loading}
               >
-                {LANGUAGES.map(l => (
-                  <option key={l} value={l}>{l}</option>
+                {languageOptions.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
               {/* Custom Arrow */}

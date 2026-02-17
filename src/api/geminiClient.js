@@ -1,30 +1,14 @@
 // Filename: src/api/geminiClient.js
 import { supabase } from './supabaseClient';
 
-/**
- * Invokes the serverless Edge Function to analyze text.
- * Implements a "Safe Fallback" pattern to prevent UI crashes.
- * * @param {string} sentence - The student's raw input.
- * @param {string} language - The target language context.
- * @returns {Promise<Object>} - Standardized correction object.
- */
 export async function checkStudentSentence(sentence, language) {
-  const DEFAULT_ERROR_RESPONSE = {
-    is_correct: false,
-    corrected_sentence: "Analysis Unavailable",
-    explanation: "We could not connect to the AI service at this moment. Please check your internet connection.",
-    categories: ["System Error"]
-  };
+  // 1. Validate Input
+  if (!sentence || typeof sentence !== 'string') {
+    throw new Error("Invalid input provided");
+  }
 
   try {
-    // 1. Validate Input
-    if (!sentence || typeof sentence !== 'string') {
-      console.warn("GeminiClient: Invalid input provided.");
-      return DEFAULT_ERROR_RESPONSE;
-    }
-
     // 2. Invoke Edge Function
-    // We use 'invoke' which handles the HTTP POST and Auth headers automatically
     const { data, error } = await supabase.functions.invoke('check-sentence', {
       body: { 
         sentence: sentence.trim(), 
@@ -32,22 +16,31 @@ export async function checkStudentSentence(sentence, language) {
       }
     });
 
-    // 3. Handle Network/Function Errors
+    // 3. Handle Network Errors (Supabase connectivity issues)
     if (error) {
-      throw new Error(`Edge Function Error: ${error.message}`);
+      console.error("🔥 Network/Supabase Error:", error);
+      throw new Error(error.message || "Edge Function Connection Failed");
     }
 
-    // 4. Return Validated Data
-    return data || DEFAULT_ERROR_RESPONSE;
+    // 4. Handle "Paranoid Debugger" Errors (The critical part!)
+    // If the server sent back an error message inside the data, show it!
+    if (data && data.error) {
+        console.error("💀 Backend Logic Error:", data.error);
+        // This ALERT is what we need to see!
+        alert(`DEBUG ERROR FROM SERVER:\n\n${data.error}`); 
+        throw new Error(data.error);
+    }
+
+    // 5. Validate AI Response Structure
+    if (!data || (typeof data.is_correct === 'undefined' && !data.corrected_sentence)) {
+        console.error("⚠️ Invalid Data Shape:", data);
+        throw new Error("AI returned unreadable data.");
+    }
+
+    return data;
 
   } catch (error) {
-    console.error('Gemini API Critical Failure:', error);
-    
-    // Return safe fallback so the UI doesn't break
-    return {
-      ...DEFAULT_ERROR_RESPONSE,
-      // If we have specific error details (like "Rate Limit"), we could expose them here
-      explanation: "AI Service is temporarily unavailable. Your mistake has been logged locally." 
-    };
+    console.error('Gemini Client Failure:', error);
+    throw error;
   }
 }

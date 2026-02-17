@@ -1,4 +1,3 @@
-// Filename: src/App.jsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { supabase } from './api/supabaseClient';
@@ -11,6 +10,10 @@ import { ClassPage } from './pages/ClassPage';
 import { PendingReviewPage } from './pages/PendingReviewPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { HomeworkPage } from './pages/HomeworkPage';
+import { SessionReviewPage } from './pages/SessionReviewPage';
+// --- ADDED IMPORTS ---
+import { StudentProfilePage } from './pages/StudentProfilePage';
+import { PublicHomeworkPage } from './pages/PublicHomeworkPage';
 
 // Components
 import { Loader2 } from 'lucide-react';
@@ -20,13 +23,12 @@ export default function App() {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Initial Session Check
     const initializeAuth = async () => {
       try {
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         setSession(initialSession);
       } catch (error) {
-        console.error("Auth Initialization Error:", error);
+        console.error("Auth Error:", error);
       } finally {
         setIsAuthLoading(false);
       }
@@ -34,18 +36,14 @@ export default function App() {
 
     initializeAuth();
 
-    // 2. Real-time Subscription to Auth Changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
       setIsAuthLoading(false);
     });
 
-    // Cleanup subscription on unmount
     return () => subscription.unsubscribe();
   }, []);
 
-  // --- Loading State ---
-  // Blocks the entire UI until we know who the user is.
   if (isAuthLoading) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-gray-50 text-indigo-900">
@@ -59,24 +57,26 @@ export default function App() {
     <SessionProvider>
       <Router>
         <Routes>
+          {/* 1. PUBLIC ROUTES (Accessible by anyone, e.g. Students via Link) */}
+          <Route path="/hw/:sessionId" element={<PublicHomeworkPage />} />
+
+          {/* 2. AUTHENTICATION LOGIC */}
           {!session ? (
-            // --- Unauthenticated Routes ---
             <>
               <Route path="/auth" element={<AuthPage />} />
-              {/* Catch-all: Redirect to Auth */}
               <Route path="*" element={<Navigate to="/auth" replace />} />
             </>
           ) : (
-            // --- Authenticated Routes ---
             <>
+              {/* 3. PROTECTED ROUTES (Teacher Dashboard) */}
               <Route path="/" element={<DashboardPage session={session} />} />
-              {/* Domain: Classroom */}
               <Route path="/class/session/:sessionId" element={<ClassPage />} />
-              {/* Domain: Review & Utils */}
+              <Route path="/student/:id" element={<StudentProfilePage />} />
               <Route path="/pending" element={<PendingReviewPage session={session} />} />
+              <Route path="/pending/:sessionId" element={<SessionReviewPage />} />
               <Route path="/homework" element={<HomeworkPage />} />
               <Route path="/settings" element={<SettingsPage />} />
-              {/* Catch-all: Redirect to Dashboard */}
+              
               <Route path="*" element={<Navigate to="/" replace />} />
             </>
           )}

@@ -1,42 +1,87 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
+// Filename: src/App.jsx
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { supabase } from './api/supabaseClient';
+import { SessionProvider } from './context/SessionContext';
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
+// Pages
+import { AuthPage } from './pages/AuthPage';
+import { DashboardPage } from './pages/DashboardPage';
+import { ClassPage } from './pages/ClassPage';
+import { PendingReviewPage } from './pages/PendingReviewPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { HomeworkPage } from './pages/HomeworkPage';
+import { StudentProfilePage } from './pages/StudentProfilePage'; // New Import
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+// Components
+import { Loader2 } from 'lucide-react';
+
+export default function App() {
+  const [session, setSession] = useState(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+
+  useEffect(() => {
+    // 1. Initial Session Check
+    const initializeAuth = async () => {
+      try {
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        setSession(initialSession);
+      } catch (error) {
+        console.error("Auth Initialization Error:", error);
+      } finally {
+        setIsAuthLoading(false);
+      }
+    };
+
+    initializeAuth();
+
+    // 2. Real-time Subscription to Auth Changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+      setIsAuthLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (isAuthLoading) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-gray-50 text-indigo-900">
+        <Loader2 className="w-12 h-12 animate-spin mb-4 text-indigo-600" />
+        <p className="text-sm font-medium tracking-wide animate-pulse">Initializing Ling Lenz...</p>
+      </div>
+    );
   }
-  to {
-    transform: rotate(360deg);
-  }
-}
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
+  return (
+    <SessionProvider>
+      <Router>
+        <Routes>
+          {!session ? (
+            <>
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="*" element={<Navigate to="/auth" replace />} />
+            </>
+          ) : (
+            <>
+              <Route path="/" element={<DashboardPage session={session} />} />
+              
+              {/* Domain: Classroom */}
+              <Route path="/class/session/:sessionId" element={<ClassPage />} />
+              
+              {/* Domain: Students */}
+              <Route path="/student/:id" element={<StudentProfilePage />} />
 
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
+              {/* Domain: Review & Utils */}
+              <Route path="/pending" element={<PendingReviewPage session={session} />} />
+              <Route path="/homework" element={<HomeworkPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </>
+          )}
+        </Routes>
+      </Router>
+    </SessionProvider>
+  );
 }

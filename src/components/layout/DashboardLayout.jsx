@@ -1,22 +1,20 @@
 // Filename: src/components/layout/DashboardLayout.jsx
 import { Link, useLocation } from 'react-router-dom';
-import { useSession } from '../../context/SessionContext';
 import { useState } from 'react';
 import clsx from 'clsx';
 
 // Icons
 import { Users, Clock, Home, Settings, Aperture, Menu, X, ChevronRight } from 'lucide-react';
 
+// COMPONENTS
+import { ActiveSessionBanner } from '../ui/ActiveSessionBanner'; // Import the new banner
+
 /**
  * Internal NavLink Component for consistent Sidebar styling.
- * FIX: We explicitly assign the icon to a variable to satisfy strict linters.
  */
 function NavLink({ to, icon, children, onClick }) {
   const location = useLocation();
-  // Check if current path starts with the link (handling sub-routes)
   const isActive = location.pathname === to || (to !== '/' && location.pathname.startsWith(to));
-
-  // Explicitly assign to a PascalCase variable for JSX rendering
   const IconComponent = icon;
 
   return (
@@ -26,8 +24,8 @@ function NavLink({ to, icon, children, onClick }) {
       className={clsx(
         'group flex items-center justify-between py-3 px-4 mx-2 rounded-lg transition-all duration-200',
         isActive 
-          ? 'bg-gray-800 text-white font-medium shadow-md border-l-4 border-indigo-500' // Active: Brand Green Border
-          : 'text-gray-400 hover:bg-gray-800 hover:text-white' // Inactive: Subtle Hover
+          ? 'bg-gray-800 text-white font-medium shadow-md border-l-4 border-indigo-500'
+          : 'text-gray-400 hover:bg-gray-800 hover:text-white'
       )}
     >
       <div className="flex items-center space-x-3">
@@ -40,35 +38,11 @@ function NavLink({ to, icon, children, onClick }) {
 }
 
 export function DashboardLayout({ children }) {
-  const location = useLocation();
-  const currentPath = location.pathname;
-  const { activeSession } = useSession();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  // Logic: Show Banner if session is active AND we are not currently in that session
-  const showBanner = activeSession && !currentPath.startsWith(`/class/session/${activeSession.id}`);
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden font-sans">
       
-      {/* --- GLOBAL ALERT BANNER --- */}
-      {showBanner && (
-        <div className="fixed top-0 left-0 right-0 z-[60] bg-indigo-700 text-white px-4 py-2 text-center font-medium shadow-lg flex justify-between items-center transition-transform duration-300">
-          <div className="flex items-center space-x-2 animate-pulse">
-            <div className="w-2.5 h-2.5 bg-green-400 rounded-full shadow-[0_0_8px_rgba(74,222,128,0.8)]" />
-            <span className="text-sm font-semibold tracking-wide truncate">
-              Live Session: {activeSession.name}
-            </span>
-          </div>
-          <Link 
-            to={`/class/session/${activeSession.id}`} 
-            className="bg-white text-indigo-800 px-4 py-1 rounded-full text-xs font-bold hover:bg-gray-100 hover:scale-105 transition-all shadow-sm flex items-center gap-1"
-          >
-            Resume <ChevronRight className="w-3 h-3" />
-          </Link>
-        </div>
-      )}
-
       {/* --- MOBILE MENU OVERLAY --- */}
       {isMobileMenuOpen && (
         <div 
@@ -82,9 +56,7 @@ export function DashboardLayout({ children }) {
       <aside 
         className={clsx(
           'fixed inset-y-0 left-0 z-50 w-72 bg-black text-white flex flex-col transition-transform duration-300 ease-out md:relative md:translate-x-0 shadow-2xl border-r border-gray-800',
-          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full',
-          // Push sidebar down if banner is visible
-          showBanner ? 'md:mt-[40px] h-[calc(100vh-40px)]' : 'h-screen'
+          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         {/* Brand Header */}
@@ -126,7 +98,7 @@ export function DashboardLayout({ children }) {
           </NavLink>
         </nav>
 
-        {/* User Profile Footer (Placeholder for now) */}
+        {/* User Profile Footer */}
         <div className="p-4 border-t border-gray-800 bg-gray-900/50">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 rounded-full bg-indigo-900 flex items-center justify-center text-xs font-bold text-indigo-200">
@@ -141,10 +113,11 @@ export function DashboardLayout({ children }) {
       </aside>
 
       {/* --- MAIN CONTENT WRAPPER --- */}
-      <div className={clsx(
-        "flex-1 flex flex-col min-w-0 overflow-hidden relative transition-all duration-300",
-        showBanner ? 'mt-[40px] h-[calc(100vh-40px)]' : 'h-screen'
-      )}>
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative transition-all duration-300">
+        
+        {/* GLOBAL BANNER: Placed here so it pushes content down */}
+        <ActiveSessionBanner />
+
         {/* Mobile Header */}
         <div className="md:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between shadow-sm z-20 sticky top-0">
           <button onClick={() => setIsMobileMenuOpen(true)} className="text-gray-600 hover:text-gray-900">

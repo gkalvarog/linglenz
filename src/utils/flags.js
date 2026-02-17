@@ -1,51 +1,53 @@
-// src/utils/flags.js
+// Filename: src/utils/flags.js
 
+// 1. Export the object directly so the Modal can use it for the list
+export const flags = {
+  'english': '🇺🇸',
+  'spanish': '🇪🇸',
+  'french': '🇫🇷',
+  'german': '🇩🇪',
+  'italian': '🇮🇹',
+  'portuguese': '🇧🇷',
+  'chinese': '🇨🇳',
+  'mandarin': '🇨🇳',
+  'japanese': '🇯🇵',
+  'korean': '🇰🇷',
+  'russian': '🇷🇺',
+  'arabic': '🇸🇦',
+  'hindi': '🇮🇳',
+  'hebrew': '🇮🇱',
+  'turkish': '🇹🇷',
+  'dutch': '🇳🇱',
+  'swedish': '🇸🇪',
+  'norwegian': '🇳🇴',
+  'danish': '🇩🇰',
+  'polish': '🇵🇱',
+  'ukrainian': '🇺🇦',
+  'greek': '🇬🇷',
+  'thai': '🇹🇭',
+  'vietnamese': '🇻🇳',
+  'indonesian': '🇮🇩',
+  'bahasa': '🇮🇩',
+  'tagalog': '🇵🇭',
+  'filipino': '🇵🇭',
+  'czech': '🇨🇿',
+  'finnish': '🇫🇮',
+  'romanian': '🇷🇴',
+  'hungarian': '🇭🇺'
+};
+
+// 2. Export the helper function (it now uses the variable above)
 export function getLanguageFlag(language) {
   if (!language) return '🏳️';
   
   const lang = language.toLowerCase();
-  
-  const flags = {
-    'english': '🇺🇸',
-    'spanish': '🇪🇸',
-    'french': '🇫🇷',
-    'german': '🇩🇪',
-    'italian': '🇮🇹',
-    'portuguese': '🇧🇷',
-    'chinese': '🇨🇳',
-    'mandarin': '🇨🇳',
-    'japanese': '🇯🇵',
-    'korean': '🇰🇷',
-    'russian': '🇷🇺',
-    'arabic': '🇸🇦',
-    'hindi': '🇮🇳',
-    'hebrew': '🇮🇱',
-    'turkish': '🇹🇷',
-    'dutch': '🇳🇱',
-    'swedish': '🇸🇪',
-    'norwegian': '🇳🇴',
-    'danish': '🇩🇰',
-    'polish': '🇵🇱',
-    'ukrainian': '🇺🇦',
-    'greek': '🇬🇷',
-    'thai': '🇹🇭',
-    'vietnamese': '🇻🇳',
-    'indonesian': '🇮🇩',
-    'bahasa': '🇮🇩',
-    'tagalog': '🇵🇭',
-    'filipino': '🇵🇭',
-    'czech': '🇨🇿',
-    'finnish': '🇫🇮',
-    'romanian': '🇷🇴',
-    'hungarian': '🇭🇺'
-  };
   
   // Case-insensitive exact match first
   if (flags[lang]) {
     return flags[lang];
   }
   
-  // Then check for substring matches (like your original includes() logic)
+  // Then check for substring matches
   for (const [key, flag] of Object.entries(flags)) {
     if (lang.includes(key)) {
       return flag;
